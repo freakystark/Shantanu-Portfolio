@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@100..900&family=Pinyon+Script&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+  --font-cursive: "Pinyon Script", cursive;
+  
+  --color-piano-ivory: #FDFCF0;
+  --color-piano-ebony: #1A1A1A;
+  --color-piano-gold: #C5A059;
+}
+
+@layer base {
+  body {
+    @apply bg-piano-ivory text-piano-ebony font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+.piano-key-shadow {
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.piano-key-active {
+  background: linear-gradient(to bottom, #fff 0%, #f0f0f0 100%);
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.piano-pattern {
+  background-image: linear-gradient(90deg, rgba(26, 26, 26, 0.03) 1px, transparent 1px);
+  background-size: 40px 100%;
+}
