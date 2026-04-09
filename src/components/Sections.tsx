@@ -64,9 +64,9 @@ export const Hero = () => {
 export const Listen = () => {
   {/* EDIT: Track List Data */}
   const tracks = [
-    { title: "Midnight Nocturne", type: "Solo Piano", duration: "4:32" },
-    { title: "Neon Pulse", type: "Synth Exploration", duration: "3:15" },
-    { title: "Ethereal Echoes", type: "Ambient Keys", duration: "5:10" },
+    { title: "Bin Tere Sanam", type: "Solo Piano", duration: "1:00" },
+    { title: "Gulabi Aakhein", type: "Solo Piano", duration: "1:04" },
+    { title: "Mere Rang Mein", type: "Ambient Keys", duration: "1:14" },
   ];
 
   const [playingIndex, setPlayingIndex] = React.useState<number | null>(null);
@@ -349,7 +349,7 @@ export const Contact = () => {
                 </div>
                 <div>
                   <h4 className="font-serif text-xl mb-1">WhatsApp</h4>
-                  <a href="https://wa.me/910000000000" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-piano-gold hover:underline">+91 00000 00000</a>
+                  <a href="https://wa.me/+919527762077" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-piano-gold hover:underline">+91 95277 62077</a>
                 </div>
               </div>
             </div>
