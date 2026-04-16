@@ -1,3 +1,4 @@
+// 
 import React, { useState, useEffect } from 'react';
 import { PianoScroll } from './components/PianoScroll';
 import { Hero, Listen, GigCalendar, Gallery, Contact } from './components/Sections';
@@ -54,16 +55,20 @@ export default function App() {
       
       {/* Navigation */}
       <nav className={cn(
-        "fixed top-0 left-0 w-full z-40 px-8 py-6 flex justify-between items-center transition-all duration-300",
+        "fixed top-0 left-0 w-full z-40 px-6 md:px-8 py-6 flex justify-between items-center transition-all duration-300",
         isScrolled 
           ? "bg-piano-ivory/90 backdrop-blur-md shadow-sm py-4" 
           : "bg-transparent py-6"
       )}>
         <div className={cn(
-          "text-2xl font-serif transition-colors duration-300",
+          "hidden md:flex text-xl md:text-2xl font-serif transition-colors duration-300 flex-col leading-none pl-2 md:pl-0",
           isScrolled ? "text-piano-gold" : "text-white"
         )}>
-          SJ
+          <span className="tracking-tighter uppercase">The Piano</span>
+          <span className={cn(
+            "text-[10px] tracking-[0.3em] uppercase",
+            isScrolled ? "text-piano-ebony/60" : "text-piano-gold"
+          )}>Project</span>
         </div>
         
         {/* Desktop Menu */}
@@ -112,17 +117,20 @@ export default function App() {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 right-0 h-full w-[80%] bg-piano-ivory z-[60] flex flex-col p-8 md:hidden shadow-2xl"
+                className="fixed top-0 right-0 h-full w-[85%] bg-white z-[60] flex flex-col p-8 md:hidden shadow-2xl"
               >
-                <div className="flex justify-between items-center mb-12">
-                  <span className="text-2xl font-serif text-piano-gold">SJ</span>
-                  <button 
-                    onClick={() => setIsMenuOpen(false)}
-                    className="p-2 text-piano-ebony"
-                  >
-                    <X size={28} />
-                  </button>
-                </div>
+                  <div className="flex justify-between items-center mb-12">
+                    <div className="flex flex-col leading-none pl-2">
+                      <span className="text-2xl font-serif text-piano-ebony uppercase tracking-tighter">The Piano</span>
+                      <span className="text-[10px] font-sans text-piano-gold uppercase tracking-[0.3em]">Project</span>
+                    </div>
+                    <button 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="p-2 text-piano-ebony"
+                    >
+                      <X size={28} />
+                    </button>
+                  </div>
                 
                 <div className="flex flex-col gap-8">
                   {navItems.map((item) => (
@@ -138,12 +146,12 @@ export default function App() {
                 </div>
 
                 <div className="mt-auto pt-12 border-t border-piano-ebony/10">
-                  <p className="text-xs uppercase tracking-widest text-piano-ebony/40 mb-4 font-medium">Connect</p>
+                  <p className="text-[10px] uppercase tracking-widest text-piano-ebony/40 mb-4 font-medium">Connect</p>
                   <div className="flex gap-6">
                     <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-piano-ebony hover:text-piano-gold transition-colors">
                       <Instagram size={24} />
                     </a>
-                    <a href="https://wa.me/910000000000" target="_blank" rel="noopener noreferrer" className="text-piano-ebony hover:text-piano-gold transition-colors">
+                    <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="text-piano-ebony hover:text-piano-gold transition-colors">
                       <WhatsAppIcon size={24} />
                     </a>
                   </div>
@@ -162,27 +170,32 @@ export default function App() {
       <Contact />
 
       {/* Footer */}
-      <footer className="py-24 px-6 border-t border-piano-ebony/5 text-center bg-piano-ivory">
-        <div className="text-4xl font-serif mb-8 tracking-tighter">SHANTANU JAGIRDAR</div>
+      <footer className="py-20 md:py-24 px-6 border-t border-piano-ebony/5 text-center bg-piano-ivory">
+        <div className="mb-10 md:mb-12">
+          <div className="text-4xl md:text-7xl font-serif tracking-tighter uppercase leading-none mb-2">
+            THE PIANO <span className="text-piano-gold">PROJECT</span>
+          </div>
+          <div className="font-cursive text-xl md:text-3xl text-piano-gold">By Shantanu Jagirdar</div>
+        </div>
         
         {/* Contact Info in Footer */}
-        <div className="flex flex-col items-center gap-2 mb-12 text-piano-ebony/60">
+        <div className="flex flex-col items-center gap-2 mb-10 md:mb-12 text-piano-ebony/60">
           <div className="flex items-center gap-2">
-            <Phone size={16} className="text-piano-gold" />
-            <span className="text-sm">+91 95277 62077</span>
+            <Phone size={12} className="text-piano-gold" />
+            <span className="text-[10px] md:text-sm">+91 95277 62077</span>
           </div>
           <div className="flex items-center gap-2">
-            <WhatsAppIcon size={16} className="text-piano-gold" />
-            <span className="text-sm">WhatsApp available</span>
+            <WhatsAppIcon size={12} className="text-piano-gold" />
+            <span className="text-[10px] md:text-sm">WhatsApp available</span>
           </div>
         </div>
 
         {/* Social Links */}
-        <div className="flex justify-center gap-8 mb-12">
-          <a href="https://www.instagram.com/shantanu_keys/" target="_blank" rel="noopener noreferrer" className="p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
+        <div className="flex justify-center gap-6 md:gap-8 mb-10 md:mb-12">
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2.5 md:p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
             <Instagram size={20} />
           </a>
-          <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
+          <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="p-2.5 md:p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
             <WhatsAppIcon size={20} />
           </a>
         </div>
