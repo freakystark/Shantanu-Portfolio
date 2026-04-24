@@ -21,7 +21,10 @@
       ]
     },
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
     "noEmit": true,
     "types": ["vite/client"]
-  }
+  },
+  "include": ["src", "firebase-applet-config.json"]
 }

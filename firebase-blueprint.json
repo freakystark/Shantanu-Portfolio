@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "track": {
+      "title": "Track",
+      "description": "A musical track for the Listen section",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The name of the song" },
+        "type": { "type": "string", "description": "Genre or instrument type (e.g. Solo Piano)" },
+        "duration": { "type": "string", "description": "Formatted duration (m:ss)" },
+        "tag": { "type": "string", "enum": ["none", "Most Liked", "Newly Added", "Must Listen", "Fan Favorite"], "description": "Status tag for the track" },
+        "audioUrl": { "type": "string", "description": "URL to the audio file in storage" },
+        "order": { "type": "number", "description": "Display order" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "audioUrl"]
+    },
+    "gig": {
+      "title": "Gig",
+      "description": "An upcoming show for the Gigs section",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "description": "Formatted date (e.g. APR 15)" },
+        "venue": { "type": "string", "description": "Performance venue name" },
+        "location": { "type": "string", "description": "City and country" },
+        "status": { "type": "string", "description": "Booking status (e.g. Tickets Available)" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Real timestamp for sorting" }
+      },
+      "required": ["date", "venue", "location"]
+    },
+    "galleryItem": {
+      "title": "Gallery Item",
+      "description": "An image or video for the Gallery section",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "url": { "type": "string", "description": "URL to the media file" },
+        "title": { "type": "string", "description": "Caption for the item" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "url", "title"]
+    },
+    "user": {
+      "title": "User",
+      "description": "App users with roles",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "artist", "user"] },
+        "displayName": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/tracks/{trackId}": {
+      "schema": "track",
+      "description": "Collection of musical demo tracks"
+    },
+    "/gigs/{gigId}": {
+      "schema": "gig",
+      "description": "Collection of upcoming performance dates"
+    },
+    "/gallery/{itemId}": {
+      "schema": "galleryItem",
+      "description": "Collection of gallery media assets"
+    },
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "Application user records and roles"
+    }
+  }
+}

@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Music, Calendar, Mail, FileText, Play, Pause, Volume2, Instagram, Youtube, Twitter, ExternalLink, Phone, MessageCircle } from 'lucide-react';
+import { 
+  Music, Calendar, Mail, FileText, Play, Pause, Volume2, Instagram, 
+  Youtube, Twitter, ExternalLink, Phone, MessageCircle, Loader2 
+} from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { db } from '../firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 // =============================================================================
 // ARTIST PERSONALIZATION SECTION
@@ -40,7 +45,7 @@ export const Hero = () => {
               Concert Pianist, Session Keyboardist & DJ
             </span>
           </div>
-          <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-8 md:mb-10">
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-10">
             <a href="#listen" className="px-6 md:px-8 py-2.5 md:py-3 bg-piano-gold text-piano-ebony text-sm md:text-base font-medium rounded-full hover:bg-white transition-colors">
               Listen to Demos
             </a>
@@ -49,9 +54,11 @@ export const Hero = () => {
             </a>
           </div>
           
-          <p className="max-w-xl mx-auto text-xs md:text-base text-piano-ivory/50 font-light leading-relaxed tracking-wide italic">
-            "Crafting sonic landscapes through the timeless resonance of ivory and the modern pulse of synthesis."
-          </p>
+          <div className="px-6">
+            <p className="max-w-xl mx-auto text-sm md:text-lg text-piano-ivory/60 font-light leading-relaxed italic border-t border-piano-ivory/10 pt-8">
+              "Crafting sonic landscapes through the timeless resonance of ivory and the modern pulse of synthesis."
+            </p>
+          </div>
         </motion.div>
       </div>
       
@@ -67,20 +74,30 @@ export const Hero = () => {
 };
 
 export const Listen = () => {
-  {/* EDIT: Track List Data */}
-  const tracks = [
-    { title: "Bin Tere Sanam", type: "Solo Piano", duration: "1:00" },
-    { title: "Gulabi Aakhein", type: "Solo Piano", duration: "1:04" },
-   // { title: "Mere Rang Mein", type: "Ambient Keys", duration: "1:14" },
-    { title: "Sagar Jaisi Aankhowali", type: "Ambient Keys", duration: "1:16" },
-    { title: "Tere Liye - Veer Zaara", type: "Ambient Keys", duration: "1:21" },
-  ];
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [playingIndex, setPlayingIndex] = React.useState<number | null>(null);
-  const [progress, setProgress] = React.useState(0);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    const q = query(collection(db, 'tracks'), orderBy('order', 'asc'));
+    return onSnapshot(q, (snapshot) => {
+      const fetchedTracks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTracks(fetchedTracks);
+      
+      // Preload first two tracks
+      fetchedTracks.slice(0, 2).forEach(track => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'audio';
+        link.href = (track as any).audioUrl;
+        document.head.appendChild(link);
+      });
+    });
+  }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let interval: any;
     if (playingIndex !== null) {
       interval = setInterval(() => {
@@ -95,34 +112,24 @@ export const Listen = () => {
 
   const handlePlay = (index: number) => {
     if (playingIndex === index) {
-      audioRef.current?.pause();
-      setPlayingIndex(null);
-      window.dispatchEvent(new CustomEvent('audio-playback-state', { detail: { isPlaying: false } }));
+      if (audioRef.current?.paused) {
+        audioRef.current?.play();
+      } else {
+        audioRef.current?.pause();
+      }
+      // Re-triggering state update for icon toggle is handled by audio events mostly,
+      // but manually setting playingIndex null on pause is standard in this component logic
+      if (audioRef.current?.paused) setPlayingIndex(null);
     } else {
       if (audioRef.current) {
-        // Use import.meta.env.BASE_URL for GitHub Pages compatibility
-        const baseUrl = import.meta.env.BASE_URL || '/';
-        const fileName = `${tracks[index].title}.mp3`;
-        // Ensure no double slashes
-        const trackPath = `${baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'}${fileName}`;
-        
-        console.log("Attempting to play:", trackPath);
-        
-        audioRef.current.src = encodeURI(trackPath); 
+        setIsLoading(true);
+        audioRef.current.src = tracks[index].audioUrl;
         audioRef.current.load();
         audioRef.current.play().then(() => {
-          window.dispatchEvent(new CustomEvent('audio-playback-state', { detail: { isPlaying: true } }));
+          setIsLoading(false);
         }).catch(e => {
           console.error("Audio play failed:", e);
-          // Fallback: try relative path if absolute fails
-          if (e.name === "NotSupportedError" || e.name === "NotAllowedError" || e.message.includes("404")) {
-            console.log("Retrying with relative path...");
-            audioRef.current!.src = encodeURI(fileName);
-            audioRef.current!.load();
-            audioRef.current!.play().then(() => {
-              window.dispatchEvent(new CustomEvent('audio-playback-state', { detail: { isPlaying: true } }));
-            }).catch(err => console.error("All playback attempts failed:", err));
-          }
+          setIsLoading(false);
         });
         setPlayingIndex(index);
       }
@@ -176,9 +183,13 @@ export const Listen = () => {
               <button 
                 onClick={() => playingIndex !== null && handlePlay(playingIndex)}
                 className="w-12 h-12 rounded-full bg-piano-gold text-piano-ebony flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-piano-gold/20 disabled:opacity-50"
-                disabled={playingIndex === null}
+                disabled={playingIndex === null || isLoading}
               >
-                {playingIndex !== null ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
+                {isLoading ? (
+                  <Loader2 className="animate-spin" size={24} />
+                ) : (
+                  playingIndex !== null ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />
+                )}
               </button>
             </div>
           </div>
@@ -202,7 +213,14 @@ export const Listen = () => {
               <div className="flex items-center gap-6">
                 <span className="text-sm font-serif text-piano-ebony/20">0{i + 1}</span>
                 <div>
-                  <h3 className={cn("font-medium text-lg transition-colors", playingIndex === i ? "text-piano-gold" : "group-hover:text-piano-gold")}>{track.title}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={cn("font-medium text-lg transition-colors", playingIndex === i ? "text-piano-gold" : "group-hover:text-piano-gold")}>{track.title}</h3>
+                    {track.tag && track.tag !== 'none' && (
+                      <span className="text-[8px] bg-piano-gold/10 text-piano-gold px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter">
+                        {track.tag}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-piano-ebony/40">{track.type}</p>
                 </div>
               </div>
@@ -223,13 +241,14 @@ export const Listen = () => {
 };
 
 export const GigCalendar = () => {
-  {/* EDIT: Gig List Data */}
-  const gigs = [
-    { date: "APR 15", venue: "De Mora", location: "Pune", status: "Tickets Available" },
-    { date: "MAY 02", venue: "Brew Merchant", location: "Pune", status: "Tickets Available" },
-    { date: "MAY 18", venue: "Ritz Carlton", location: "London", status: "Tickets Available" },
-    { date: "JUN 15", venue: "Conrad", location: "Bengaluru", status: "Tickets Available" },
-  ];
+  const [gigs, setGigs] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'gigs'), orderBy('timestamp', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      setGigs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+  }, []);
 
   return (
     <section id="gigs" className="bg-piano-ebony py-24 text-piano-ivory">
@@ -282,14 +301,14 @@ export const GigCalendar = () => {
 };
 
 export const Gallery = () => {
-  const items = [
-    { type: 'image', url: 'https://images.unsplash.com/photo-1552422535-c45813c61732?q=80&w=2070&auto=format&fit=crop', title: 'Live at The Blue Note' },
-    { type: 'video', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=2070&auto=format&fit=crop', title: 'Studio Session - Neon Pulse' },
-    { type: 'image', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2070&auto=format&fit=crop', title: 'Synthesizer Rig Setup' },
-    { type: 'image', url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=2070&auto=format&fit=crop', title: 'Concert Hall Rehearsal' },
-    { type: 'video', url: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=2070&auto=format&fit=crop', title: 'DJ Set - After Hours' },
-    { type: 'image', url: 'https://images.unsplash.com/photo-1520529611473-d58ff3f47a3e?q=80&w=2070&auto=format&fit=crop', title: 'Grand Piano Detail' },
-  ];
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'gallery'), orderBy('order', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+  }, []);
 
   return (
     <section id="gallery" className="pt-20 md:pt-24 pb-12 px-6 max-w-7xl mx-auto">
@@ -424,6 +443,8 @@ export const Contact = () => {
 
 
 
+
+
 // import React from 'react';
 // import { motion } from 'motion/react';
 // import { Music, Calendar, Mail, FileText, Play, Pause, Volume2, Instagram, Youtube, Twitter, ExternalLink, Phone, MessageCircle } from 'lucide-react';
@@ -448,31 +469,36 @@ export const Contact = () => {
 //         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-piano-ebony/50 to-piano-ebony" />
 //       </div>
       
-//       <div className="relative z-10 text-center px-4">
+//       <div className="relative z-10 text-center px-4 pt-24 md:pt-0">
 //         <motion.div
 //           initial={{ opacity: 0, y: 20 }}
 //           animate={{ opacity: 1, y: 0 }}
 //           transition={{ duration: 0.8 }}
 //         >
-//           <span className="text-piano-gold tracking-[0.3em] uppercase text-sm font-medium mb-4 block">
-//             {/* EDIT: Artist Title */}
-//             Concert Pianist, Session Keyboardist & DJ
-//           </span>
-//           <h1 className="text-6xl md:text-8xl font-serif mb-6 leading-tight">
-//             SHANTANU <br /> <span className="font-cursive text-piano-gold normal-case text-7xl md:text-9xl -mt-4 block">Jagirdar</span>
+//           <h1 className="text-4xl md:text-9xl font-serif mb-6 leading-[0.9] uppercase tracking-tighter">
+//             The Piano <br /> <span className="text-piano-gold">Project</span>
 //           </h1>
-//           <p className="max-w-xl mx-auto text-lg text-piano-ivory/80 font-light leading-relaxed mb-8">
-//             {/* EDIT: Artist Bio/Tagline */}
-//             Crafting sonic landscapes through the timeless resonance of ivory and the modern pulse of synthesis.
-//           </p>
-//           <div className="flex flex-wrap justify-center gap-4">
-//             <a href="#listen" className="px-8 py-3 bg-piano-gold text-piano-ebony font-medium rounded-full hover:bg-white transition-colors">
+//           <div className="flex flex-col items-center justify-center gap-1 mb-6">
+//             <span className="font-cursive text-xl md:text-3xl text-piano-ivory/60">By</span>
+//             <span className="font-cursive text-[38px] md:text-7xl text-piano-gold">Shantanu Jagirdar</span>
+//           </div>
+//           <div className="mb-10">
+//             <span className="text-piano-ivory/70 tracking-[0.2em] md:tracking-[0.3em] uppercase text-[10px] md:text-sm font-medium block">
+//               Concert Pianist, Session Keyboardist & DJ
+//             </span>
+//           </div>
+//           <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-8 md:mb-10">
+//             <a href="#listen" className="px-6 md:px-8 py-2.5 md:py-3 bg-piano-gold text-piano-ebony text-sm md:text-base font-medium rounded-full hover:bg-white transition-colors">
 //               Listen to Demos
 //             </a>
-//             <a href="#contact" className="px-8 py-3 border border-piano-ivory/30 rounded-full hover:bg-piano-ivory hover:text-piano-ebony transition-all">
+//             <a href="#contact" className="px-6 md:px-8 py-2.5 md:py-3 border border-piano-ivory/30 text-sm md:text-base rounded-full hover:bg-piano-ivory hover:text-piano-ebony transition-all">
 //               Session Inquiries
 //             </a>
 //           </div>
+          
+//           <p className="max-w-xl mx-auto text-xs md:text-base text-piano-ivory/50 font-light leading-relaxed tracking-wide italic">
+//             "Crafting sonic landscapes through the timeless resonance of ivory and the modern pulse of synthesis."
+//           </p>
 //         </motion.div>
 //       </div>
       
@@ -492,7 +518,7 @@ export const Contact = () => {
 //   const tracks = [
 //     { title: "Bin Tere Sanam", type: "Solo Piano", duration: "1:00" },
 //     { title: "Gulabi Aakhein", type: "Solo Piano", duration: "1:04" },
-//     { title: "Mere Rang Mein", type: "Ambient Keys", duration: "1:14" },
+//    // { title: "Mere Rang Mein", type: "Ambient Keys", duration: "1:14" },
 //     { title: "Sagar Jaisi Aankhowali", type: "Ambient Keys", duration: "1:16" },
 //     { title: "Tere Liye - Veer Zaara", type: "Ambient Keys", duration: "1:21" },
 //   ];
@@ -555,10 +581,11 @@ export const Contact = () => {
 //       <audio ref={audioRef} onEnded={() => setPlayingIndex(null)} />
 //       <div className="flex flex-col md:flex-row gap-16 items-start">
 //         <div className="w-full md:w-1/3 md:sticky md:top-24">
-//           <h2 className="text-4xl font-serif mb-6">The Sound</h2>
-//           <p className="text-piano-ebony/60 leading-relaxed mb-8">
-//             A curated selection of works spanning classical piano compositions to avant-garde synthesizer soundscapes.
-//           </p>
+//           <div className="mb-12 md:mb-16">
+//             <h2 className="text-3xl md:text-4xl font-serif mb-4">The Sound</h2>
+//             <div className="h-1 w-16 bg-piano-gold" />
+//           </div>
+          
 //           <div className="p-8 bg-piano-ebony text-piano-ivory rounded-2xl shadow-2xl border border-piano-gold/20">
 //             <div className="flex items-center justify-between mb-8">
 //               <Music className="text-piano-gold" />
@@ -654,12 +681,12 @@ export const Contact = () => {
 //   return (
 //     <section id="gigs" className="bg-piano-ebony py-24 text-piano-ivory">
 //       <div className="max-w-6xl mx-auto px-6">
-//         <div className="flex justify-between items-end mb-16">
+//         <div className="flex justify-between items-end mb-12 md:mb-16">
 //           <div>
-//             <h2 className="text-4xl font-serif mb-4">Upcoming Shows</h2>
-//             <p className="text-piano-ivory/40">Catch the performance live in these locations.</p>
+//             <h2 className="text-3xl md:text-4xl font-serif mb-4">Upcoming Shows</h2>
+//             <p className="text-piano-ivory/40 text-sm md:text-base">Catch the performance live in these locations.</p>
 //           </div>
-//           <Calendar className="text-piano-gold mb-2" size={32} />
+//           <Calendar className="text-piano-gold mb-2 hidden md:block" size={32} />
 //         </div>
         
 //         <div className="grid grid-cols-1 gap-4">
@@ -669,17 +696,17 @@ export const Contact = () => {
 //               initial={{ opacity: 0, y: 20 }}
 //               whileInView={{ opacity: 1, y: 0 }}
 //               transition={{ delay: i * 0.1 }}
-//               className="flex flex-col md:flex-row md:items-center justify-between p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+//               className="flex flex-col md:flex-row md:items-center justify-between p-6 md:p-8 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
 //             >
 //               <div className="flex items-center gap-8 mb-4 md:mb-0">
 //                 <div className="text-center min-w-[80px]">
-//                   <div className="text-piano-gold font-serif text-2xl leading-none">{gig.date.split(' ')[1]}</div>
-//                   <div className="text-xs uppercase tracking-widest text-piano-ivory/40">{gig.date.split(' ')[0]}</div>
+//                   <div className="text-piano-gold font-serif text-xl md:text-2xl leading-none">{gig.date.split(' ')[1]}</div>
+//                   <div className="text-[10px] uppercase tracking-widest text-piano-ivory/40">{gig.date.split(' ')[0]}</div>
 //                 </div>
 //                 <div className="h-10 w-[1px] bg-white/10 hidden md:block" />
 //                 <div>
-//                   <h3 className="text-xl font-serif">{gig.venue}</h3>
-//                   <p className="text-sm text-piano-ivory/60">{gig.location}</p>
+//                   <h3 className="text-lg md:text-xl font-serif">{gig.venue}</h3>
+//                   <p className="text-xs md:text-sm text-piano-ivory/60">{gig.location}</p>
 //                 </div>
 //               </div>
 //               <div className="flex items-center justify-between md:justify-end gap-8">
@@ -712,11 +739,11 @@ export const Contact = () => {
 //   ];
 
 //   return (
-//     <section id="gallery" className="pt-24 pb-12 px-6 max-w-7xl mx-auto">
-//       <div className="flex justify-between items-end mb-16">
+//     <section id="gallery" className="pt-20 md:pt-24 pb-12 px-6 max-w-7xl mx-auto">
+//       <div className="flex justify-between items-end mb-12 md:mb-16">
 //         <div>
-//           <h2 className="text-4xl font-serif mb-4">Visuals</h2>
-//           <p className="text-piano-ebony/40 font-light">Moments from the stage and the studio.</p>
+//           <h2 className="text-3xl md:text-4xl font-serif mb-4">Visuals</h2>
+//           <p className="text-piano-ebony/40 font-light text-sm md:text-base">Moments from the stage and the studio.</p>
 //         </div>
 //       </div>
       
@@ -773,13 +800,13 @@ export const Contact = () => {
 
 // export const Contact = () => {
 //   return (
-//     <section id="contact" className="py-24 px-6 bg-gradient-to-br from-piano-ivory to-piano-gold/5 relative overflow-hidden">
+//     <section id="contact" className="py-20 md:py-24 px-6 bg-gradient-to-br from-piano-ivory to-piano-gold/5 relative overflow-hidden">
 //       <div className="absolute inset-0 piano-pattern opacity-5 pointer-events-none" />
 //       <div className="max-w-6xl mx-auto relative z-10">
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-24">
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-24">
 //           <div>
-//             <h2 className="text-4xl font-serif mb-8">Get In Touch</h2>
-//             <p className="text-piano-ebony/60 leading-relaxed mb-12">
+//             <h2 className="text-3xl md:text-4xl font-serif mb-6 md:mb-8">Get In Touch</h2>
+//             <p className="text-piano-ebony/60 leading-relaxed mb-10 md:mb-12 text-sm md:text-base">
 //               For bookings, session inquiries, or collaboration requests, please use the form or reach out directly via social media.
 //             </p>
             
@@ -799,8 +826,8 @@ export const Contact = () => {
 //                   <WhatsAppIcon size={24} />
 //                 </div>
 //                 <div>
-//                   <h4 className="font-serif text-xl mb-1">WhatsApp</h4>
-//                   <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-piano-gold hover:underline">+91 95277 62077</a>
+//                   <h4 className="font-serif text-lg md:text-xl mb-1">WhatsApp</h4>
+//                   <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="text-xs md:text-sm font-medium text-piano-gold hover:underline">+91 95277 62077</a>
 //                 </div>
 //               </div>
 //             </div>
@@ -841,4 +868,3 @@ export const Contact = () => {
 //     </section>
 //   );
 // };
-

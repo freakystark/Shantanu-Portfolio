@@ -1,7 +1,8 @@
-// 
 import React, { useState, useEffect } from 'react';
 import { PianoScroll } from './components/PianoScroll';
 import { Hero, Listen, GigCalendar, Gallery, Contact } from './components/Sections';
+import { AdminDashboard } from './components/AdminDashboard';
+import { AuthProvider } from './contexts/AuthContext';
 import { Instagram, Youtube, Twitter, MessageCircle, Phone, Menu, X } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,6 +22,17 @@ const WhatsAppIcon = ({ size = 24, className = "" }: { size?: number, className?
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAdminPage, setIsAdminPage] = useState(false);
+
+  useEffect(() => {
+    // Basic routing for admin
+    const checkHash = () => {
+      setIsAdminPage(window.location.hash === '#admin' || window.location.pathname === '/admin');
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,8 +60,17 @@ export default function App() {
     { name: 'Contact', href: '#contact' },
   ];
 
+  if (isAdminPage) {
+    return (
+      <AuthProvider>
+        <AdminDashboard />
+      </AuthProvider>
+    );
+  }
+
   return (
-    <main className={cn("relative min-h-screen", isMenuOpen && "overflow-hidden h-screen")}>
+    <AuthProvider>
+      <main className={cn("relative min-h-screen", isMenuOpen && "overflow-hidden h-screen")}>
       {/* Piano Scroll Indicator */}
       <PianoScroll />
       
@@ -154,7 +175,7 @@ export default function App() {
                   
                   <p className="text-[10px] uppercase tracking-widest text-piano-ebony/40 mb-4 font-medium">Connect</p>
                   <div className="flex gap-6">
-                    <a href="https://www.instagram.com/shantanu_keys" target="_blank" rel="noopener noreferrer" className="text-piano-ebony hover:text-piano-gold transition-colors">
+                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-piano-ebony hover:text-piano-gold transition-colors">
                       <Instagram size={24} />
                     </a>
                     <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="text-piano-ebony hover:text-piano-gold transition-colors">
@@ -184,8 +205,8 @@ export default function App() {
           <div className="font-cursive text-xl md:text-3xl text-piano-gold">By Shantanu Jagirdar</div>
         </div>
         
-        {/* Contact Info in Footer */}
-        <div className="flex flex-col items-center gap-2 mb-10 md:mb-12 text-piano-ebony/60">
+        {/* Contact Info in Footer - Hidden as requested */}
+        {/* <div className="flex flex-col items-center gap-2 mb-10 md:mb-12 text-piano-ebony/60">
           <div className="flex items-center gap-2">
             <Phone size={12} className="text-piano-gold" />
             <span className="text-[10px] md:text-sm">+91 95277 62077</span>
@@ -194,11 +215,11 @@ export default function App() {
             <WhatsAppIcon size={12} className="text-piano-gold" />
             <span className="text-[10px] md:text-sm">WhatsApp available</span>
           </div>
-        </div>
+        </div> */}
 
         {/* Social Links */}
         <div className="flex justify-center gap-6 md:gap-8 mb-10 md:mb-12">
-          <a href="https://www.instagram.com/shantanu_keys" target="_blank" rel="noopener noreferrer" className="p-2.5 md:p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2.5 md:p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
             <Instagram size={20} />
           </a>
           <a href="https://wa.me/919527762077" target="_blank" rel="noopener noreferrer" className="p-2.5 md:p-3 rounded-full border border-piano-ebony/10 hover:border-piano-gold hover:text-piano-gold transition-all">
@@ -211,5 +232,7 @@ export default function App() {
         </p>
       </footer>
     </main>
+    </AuthProvider>
   );
 }
+
